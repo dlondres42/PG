@@ -45,6 +45,9 @@ class Vector:
 
 
 
+class Point(Vector):
+    #Classe abstrata que representa um ponto na malha
+    pass
 
 #vetor = Vector(1,-2,-2)
 #vetor2 = Vector(3,6,9)
