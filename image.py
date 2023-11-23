@@ -1,8 +1,9 @@
-from color import Color
 from typeguard import check_type
+from vector import Color
+
 
 class Image:
-    def __init__(self, width, height) -> None:
+    def __init__(self, width: int, height: int) -> None:
         self.width = width
         self.height = height
         self.pixels = [[None for _ in range(width)] for _ in range(height)]
@@ -16,9 +17,8 @@ class Image:
 
         def byte(code: float) -> float:
             return round(max(min(code * 255, 255), 0))
-        
+
         for row in self.pixels:
             for color in row:
                 file.write(f"{byte(color.x)} {byte(color.y)} {byte(color.z)} ")
             file.write("\n")
-
