@@ -1,4 +1,3 @@
-import imghdr
 import numpy as np
 from camera import Camera
 from color import Color
