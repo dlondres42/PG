@@ -1,7 +1,7 @@
 import numpy as np
 from camera import Camera
 from color import Color
-from objects import Sphere
+from objects import Sphere, Plane
 from scene import Scene
 from PIL import Image
 
@@ -10,28 +10,29 @@ INF = float(2e9 + 7)
 
 def main():
     # inputs do usuario
-    O = np.array([0, 0, 0])  # origem
-    A = np.array([1, 0, 0])  # alvo
+    O = np.array([0, -0.5, 0])  # origem
+    A = np.array([2, -1, 0])# alvo 
     up = np.array([0, 1, 0])  # vetor up
-    dist = 1  # distancia do alvo
+    dist = 0.5  # distancia do alvo
     hres = vres = 500  # resolucao horizontal e vertical
 
     # calculo dos vetores
-    w = normalize(O - A)
+    w = normalize(A - O)
     u = normalize(np.cross(up, w))
-    v = normalize(np.cross(w, u))
+    v = normalize(np.cross(w, u)) * -1
 
     # objetos
     camera = Camera(O, w, u, v, dist)
     objects = [
-        Sphere(np.array([4, 0, 0]), 0.5, Color(255, 0, 0)),
-        Sphere(np.array([4, -1, 1]), 0.5, Color(0, 255, 0)),
+        Sphere(np.array([2, -0.3, 0]), 0.5, Color(0, 255, 0)),
+        Plane(np.array([0,-1,0]), np.array([0,1,0]), Color(0,0,255)),
+        Sphere(np.array([2,-0.,-1]), 0.7, Color(155,133,200))
     ]
     scene = Scene(camera, objects, hres, vres)
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    image.save("output.png")  # save img
-    # image.show() # show img
+    #image.save("output.png")  # save img
+    image.show() # show img
 
 
 def render(scene: Scene) -> np.array:
@@ -62,7 +63,7 @@ def find_nearest(ray_origin, ray_direction, scene: Scene):
     obj_hit = None
     for obj in scene.objects:
         t = obj.intersect(ray_origin, ray_direction)
-        if t < t_min:
+        if t < t_min and t > 0.01:
             t_min = t
             obj_hit = obj
     return t_min, obj_hit
