@@ -1,27 +1,26 @@
-from vector import Vector, Point, Color
+import numpy as np
 
 
 class Camera:
-    """
-    Represents a camera in a 3D scene.
-
-    Attributes:
-        C (Point): The position of the center of the camera.
-        w (Vector): The direction the camera is facing.
-        u (Vector): The horizontal direction of the camera.
-        v (Vector): The vertical direction of the camera.
-        d (float): The distance between the camera and the image plane.
-    """
-
-    def __init__(self, C: Point, w: Vector, u: Vector, v: Vector, d: float):
+    def __init__(
+        self,
+        origin: np.array,
+        w: np.array,
+        v: np.array,
+        u: np.array,
+        dist: float,
+    ):
+        self.origin = origin
         self.w = w
-        self.u = u
         self.v = v
-        self.d = d
-        self.C = C
+        self.u = u
+        self.dist = dist
 
-    def __str__(self):
-        return f"Camera at point: {self.C} with w: {self.w}, u: {self.u}, v: {self.v} and d: {self.d}"
+    def get_params(self):
+        return self.origin, self.w, self.v, self.u, self.dist
 
-    def params(self):
-        return self.C, self.w, self.u, self.v, self.d
+    def __str__(self) -> str:
+        return f"Camera(origin={self.origin}, w={self.w}, v={self.v}, u={self.u}, dist={self.dist})"
+
+    def __repr__(self) -> str:
+        return str(self)

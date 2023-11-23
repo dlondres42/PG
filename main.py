@@ -1,49 +1,86 @@
-from math import e
-from image import Image
-from vector import Color, Vector, Point
+import imghdr
+import numpy as np
 from camera import Camera
-from objects import Sphere, Plane
+from color import Color
+from objects import Sphere
 from scene import Scene
-from engine import Engine
+from PIL import Image
 
-
-def get_input() -> tuple:
-    file = open("input.txt", "r")
-    lines = file.readlines()
-    file.close()
-
-    x, y, z = map(float, lines[0].split()[:3])
-    C = Point(x, y, z)
-    x, y, z = map(float, lines[1].split()[:3])
-    O = Point(x, y, z)  # direção do centro da malha
-    w = Vector(O.x - C.x, O.y - C.y, O.z - C.z).normalize()
-    x, y, z = map(float, lines[2].split()[:3])
-    up = Vector(x, y, z).normalize()  # falso vetor up
-    d = int(lines[3].split()[0])
-    hres = int(lines[4].split()[0])
-    vres = int(lines[5].split()[0])
-
-    return (C, w, up, d, hres, vres)
+INF = float(2e9 + 7)
 
 
 def main():
-    camera_center, w, up, d, hres, vres = get_input()
-    WIDTH, HEIGHT = int(hres), int(vres)
-    u = Vector.cross_product(w, up).normalize()
-    v = Vector.cross_product(u, up).normalize()
-    camera = Camera(camera_center, w, u, v, d)
+    # inputs do usuario
+    O = np.array([0, 0, 0])  # origem
+    A = np.array([1, 0, 0])  # alvo
+    up = np.array([0, 1, 0])  # vetor up
+    dist = 1  # distancia do alvo
+    hres = vres = 500  # resolucao horizontal e vertical
+
+    # calculo dos vetores
+    w = normalize(O - A)
+    u = normalize(np.cross(up, w))
+    v = normalize(np.cross(w, u))
+
+    # objetos
+    camera = Camera(O, w, u, v, dist)
     objects = [
-        # Sphere(Point(0, 0, 3), 3, Color(0, 255, 0)),
-        Sphere(Point(-0.93, -20.05, 30), 2, Color(255, 0, 0)),
-        # Plane(Point(0, -10, 0), Vector(0, 10, 0), Color(0, 0, 255)),
+        Sphere(np.array([4, 0, 0]), 0.5, Color(255, 0, 0)),
+        Sphere(np.array([4, -1, 1]), 0.5, Color(0, 255, 0)),
     ]
-    scene = Scene(camera, objects, WIDTH, HEIGHT)
-    engine = Engine()
-    image = engine.render(scene)
-
-    with open("output.ppm", "w") as img_file:
-        image.write_ppm(img_file)
+    scene = Scene(camera, objects, hres, vres)
+    mtx = render(scene)
+    image = Image.fromarray(mtx)
+    image.show()
 
 
-if __name__ == "__main__":
-    main()
+def render(scene: Scene) -> np.array:
+    hres, vres = scene.width, scene.height
+    camera = scene.camera
+    C, w, u, v, dist = camera.get_params()
+    # base ortornormal w, u, v
+
+    # malha
+    tam_x, tam_y = 0.5, 0.5
+    desl_h = ((2 * tam_x) / (hres - 1)) * u
+    desl_v = ((2 * tam_y) / (vres - 1)) * v
+    vet_inicial = (w * dist) - (tam_x * u) - (tam_y * v)
+
+    mtx = np.zeros((scene.height, scene.width, 3), dtype=np.uint8)
+
+    for j in range(vres):
+        for i in range(hres):
+            v_r = vet_inicial + (i * desl_h) + (j * desl_v)
+            _, color = ray_color(C, v_r, scene)
+            mtx[j][i] = color.to_list()
+
+    return mtx
+
+
+def find_nearest(ray_origin, ray_direction, scene: Scene):
+    t_min = INF
+    obj_hit = None
+    for obj in scene.objects:
+        t = obj.intersect(ray_origin, ray_direction)
+        if t < t_min:
+            t_min = t
+            obj_hit = obj
+    return t_min, obj_hit
+
+
+def ray_color(ray_origin, ray_direction, scene: Scene):
+    t_min, obj_hit = find_nearest(ray_origin, ray_direction, scene)
+    color = Color(229, 255, 204)
+    if obj_hit is not None:
+        color = obj_hit.color
+    return t_min, color
+
+
+def normalize(vect: np.array):
+    norm = np.linalg.norm(vect)
+    if norm == 0:
+        return vect
+    return vect / norm
+
+
+main()
