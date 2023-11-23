@@ -10,7 +10,7 @@ class Image:
     def set_pixel(self, x: int, y: int, color: Color) -> None:
         self.pixels[y][x] = color
 
-    def write_ppm(self, file):
+    def write_ppm(self, file) -> None:
         file.write(f"P3 {self.width} {self.height}\n255\n")
 
         def byte(code: float) -> float:

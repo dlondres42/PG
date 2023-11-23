@@ -1,4 +1,3 @@
-import imghdr
 import numpy as np
 from camera import Camera
 from color import Color
@@ -31,7 +30,8 @@ def main():
     scene = Scene(camera, objects, hres, vres)
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    image.show()
+    image.save("output.png")  # save img
+    # image.show() # show img
 
 
 def render(scene: Scene) -> np.array:
