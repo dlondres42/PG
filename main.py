@@ -17,6 +17,7 @@ def main():
     hres = vres = 500  # resolucao horizontal e vertical
 
     # calculo dos vetores
+    # base ortornormal
     w = normalize(O - A)
     u = normalize(np.cross(up, w))
     v = normalize(np.cross(w, u))
@@ -30,8 +31,8 @@ def main():
     scene = Scene(camera, objects, hres, vres)
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    image.save("output.png")  # save img
-    # image.show() # show img
+    # image.save("output.png")  # save img
+    image.show()  # show img
 
 
 def render(scene: Scene) -> np.array:
