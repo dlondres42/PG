@@ -35,3 +35,15 @@ class Sphere(Object):
         t1 = (-b + sqrt(determinant)) / (2 * a)
         t2 = (-b - sqrt(determinant)) / (2 * a)
         return min(t1, t2)
+
+class Plane(Object):
+    def __init__(self, center: np.array, normal: np.array, color: tuple):
+        super().__init__(center, color)
+        self.normal = normal
+
+    def intersect(self, camera_center, d_vector) -> float:
+        a = np.dot(self.normal, d_vector)
+        if a == 0:
+            return INF
+        return (np.dot(self.normal, self.center) - np.dot(self.normal, camera_center))/a
+        
