@@ -1,7 +1,7 @@
 import numpy as np
 from camera import Camera
 from color import Color
-from objects import Sphere, Plane
+from objects import Sphere, Plane, Triangles
 from scene import Scene
 from PIL import Image
 
@@ -12,21 +12,23 @@ def main():
     # inputs do usuario
     O = np.array([0, -0.5, 0])  # origem
     A = np.array([2, -1, 0])# alvo 
-    up = np.array([0, 1, 0])  # vetor up
+    up = np.array([0, 1, 0])  # vetor up 
     dist = 0.5  # distancia do alvo
     hres = vres = 500  # resolucao horizontal e vertical
 
     # calculo dos vetores
     w = normalize(A - O)
-    u = normalize(np.cross(up, w))
+    u = normalize(np.cross(up, w)) 
     v = normalize(np.cross(w, u)) * -1
 
     # objetos
+    test = Triangles(2, 4, np.array([[2, -0.3, 0], [2.5,0.1,0.2], [1.7, 0.5, -0.1], [1.5,0.3,1.2]]), [(0,1,2), (0,2,3)], Color(0, 255, 0))
     camera = Camera(O, w, u, v, dist)
     objects = [
         Sphere(np.array([2, -0.3, 0]), 0.5, Color(0, 255, 0)),
         Plane(np.array([0,-1,0]), np.array([0,1,0]), Color(0,0,255)),
-        Sphere(np.array([2,-0.,-1]), 0.7, Color(155,133,200))
+        Sphere(np.array([2,-0.1,-1]), 0.3, Color(155,133,200)),
+        Triangles(2, 4, np.array([[2, -0.3, 0], [2.5,0.1,0.2], [1.7, 0.5, -0.1], [1.5,0.3,1.2]]), [(0,1,2), (0,2,3)], Color(133, 107, 55))
     ]
     scene = Scene(camera, objects, hres, vres)
     mtx = render(scene)
@@ -51,7 +53,7 @@ def render(scene: Scene) -> np.array:
 
     for j in range(vres):
         for i in range(hres):
-            v_r = vet_inicial + (i * desl_h) + (j * desl_v)
+            v_r = vet_inicial + (i * desl_h) + (j * desl_v) # ponto do pixel
             _, color = ray_color(C, v_r, scene)
             mtx[j][i] = color.to_list()
 
