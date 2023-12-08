@@ -13,6 +13,8 @@ def main():
     O = np.array([0, -0.5, 0])  # origem
     A = np.array([2, -1, 0])# alvo 
     up = np.array([0, 1, 0])  # vetor up 
+    A = np.array([2, -1, 0])  # alvo
+    up = np.array([0, 1, 0])  # vetor up
     dist = 0.5  # distancia do alvo
     hres = vres = 500  # resolucao horizontal e vertical
 
@@ -33,8 +35,8 @@ def main():
     scene = Scene(camera, objects, hres, vres)
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    #image.save("output.png")  # save img
-    image.show() # show img
+    # image.save("output.png")  # save img
+    image.show()  # show img
 
 
 def render(scene: Scene) -> np.array:
@@ -51,9 +53,11 @@ def render(scene: Scene) -> np.array:
 
     mtx = np.zeros((scene.height, scene.width, 3), dtype=np.uint8)
 
-    for j in range(vres):
-        for i in range(hres):
-            v_r = vet_inicial + (i * desl_h) + (j * desl_v) # ponto do pixel
+    for j in range(vres):  # iterando sobre as linhas
+        for i in range(hres):  # iterando sobre as colunas
+            v_r = (
+                vet_inicial + (i * desl_h) + (j * desl_v)
+            )  # ponto do centro de cada pixel
             _, color = ray_color(C, v_r, scene)
             mtx[j][i] = color.to_list()
 
