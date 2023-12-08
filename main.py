@@ -13,9 +13,7 @@ def main():
     O = np.array([0, -0.5, 0])  # origem
     A = np.array([2, -1, 0])# alvo 
     up = np.array([0, 1, 0])  # vetor up 
-    A = np.array([2, -1, 0])  # alvo
-    up = np.array([0, 1, 0])  # vetor up
-    dist = 0.5  # distancia do alvo
+    dist = 0.2  # distancia do alvo
     hres = vres = 500  # resolucao horizontal e vertical
 
     # calculo dos vetores
