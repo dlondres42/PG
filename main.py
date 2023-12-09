@@ -10,10 +10,10 @@ INF = float(2e9 + 7)
 
 def main():
     # inputs do usuario
-    O = np.array([0, -0.5, 0])  # origem
-    A = np.array([2, -1, 0])# alvo 
+    O = np.array([0, 0, 0])  # origem
+    A = np.array([2, 0, 0])# alvo 
     up = np.array([0, 1, 0])  # vetor up 
-    dist = 0.2  # distancia do alvo
+    dist = 1 # distancia do alvo
     hres = vres = 500  # resolucao horizontal e vertical
 
     # calculo dos vetores
@@ -25,10 +25,10 @@ def main():
     test = Triangles(2, 4, np.array([[2, -0.3, 0], [2.5,0.1,0.2], [1.7, 0.5, -0.1], [1.5,0.3,1.2]]), [(0,1,2), (0,2,3)], Color(0, 255, 0))
     camera = Camera(O, w, u, v, dist)
     objects = [
-        Sphere(np.array([2, -0.3, 0]), 0.5, Color(0, 255, 0)),
+        #Sphere(np.array([2, -0.3, 0]), 0.5, Color(0, 255, 0)),
         Plane(np.array([0,-1,0]), np.array([0,1,0]), Color(0,0,255)),
-        Sphere(np.array([2,-0.1,-1]), 0.3, Color(155,133,200)),
-        Triangles(2, 4, np.array([[2, -0.3, 0], [2.5,0.1,0.2], [1.7, 0.5, -0.1], [1.5,0.3,1.2]]), [(0,1,2), (0,2,3)], Color(133, 107, 55))
+        Sphere(np.array([4,1,1]), 0.3, Color(155,133,200)),
+        Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(133, 107, 55))
     ]
     scene = Scene(camera, objects, hres, vres)
     mtx = render(scene)

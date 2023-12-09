@@ -51,7 +51,10 @@ class Plane(Object):
 
 class Triangle():
     def __init__(self, vertices: np.array) -> None:
-        self.point1, self.point2, self.point3 = self.ensure_counterclockwise(vertices)
+        #self.point1, self.point2, self.point3 = self.ensure_counterclockwise(vertices)
+        self.point1 = vertices[0]
+        self.point2 = vertices[1]
+        self.point3 = vertices[2]
         self.normal = np.cross(self.point1 - self.point2, self.point1 - self.point3)
     
 
@@ -97,8 +100,9 @@ class Triangles(Object):
                 continue  
 
             # Compute the intersection point with the plane of the triangle
-            w = camera_center - v0
-            t = -np.dot(normal, w) / ndotu
+            #w = camera_center - v0
+            #(np.dot(self.normal, self.center) - np.dot(self.normal, camera_center))
+            t = (np.dot(normal, v0)  - np.dot(normal, camera_center))/ ndotu
             intersection_point = camera_center + t * d_vector
 
             # Check if the intersection point is inside the triangle using barycentric coordinates
