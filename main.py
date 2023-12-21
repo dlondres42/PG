@@ -26,9 +26,9 @@ def main():
     camera = Camera(O, w, u, v, dist)
     objects = [
         #Sphere(np.array([2, -0.3, 0]), 0.5, Color(0, 255, 0)),
-        Plane(np.array([0,-1,0]), np.array([0,1,0]), Color(0,0,255)),
-        Sphere(np.array([4,1,1]), 0.3, Color(155,133,200)),
-        Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(133, 107, 55))
+        affine_transform(Plane(np.array([1,-0.5,0]), np.array([0,1,0]), Color(0,0,255)), translation=(0,0,0), rotation_angles=(0,0,0)),
+        affine_transform(Sphere(np.array([4,1,1]), 0.3, Color(155,133,200)), translation=(2,1,0), rotation_angles=(0,0,0)),
+        affine_transform(Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(250, 70, 55)), translation=(0,0,0), rotation_angles=(60,0,0))
     ]
     scene = Scene(camera, objects, hres, vres)
     mtx = render(scene)
@@ -87,5 +87,67 @@ def normalize(vect: np.array):
         return vect
     return vect / norm
 
+def affine_transform(obj, translation=(0, 0, 0), rotation_angles=(0, 0, 0)):
+    rotation_angles = np.radians(rotation_angles)
+
+    rotation_matrix_x = np.array([
+        [1, 0, 0, 0],
+        [0, np.cos(rotation_angles[0]), -np.sin(rotation_angles[0]), 0],
+        [0, np.sin(rotation_angles[0]), np.cos(rotation_angles[0]), 0],
+        [0, 0, 0, 1]
+    ])
+
+    rotation_matrix_y = np.array([
+        [np.cos(rotation_angles[1]), 0, np.sin(rotation_angles[1]), 0],
+        [0, 1, 0, 0],
+        [-np.sin(rotation_angles[1]), 0, np.cos(rotation_angles[1]), 0],
+        [0, 0, 0, 1]
+    ])
+
+    rotation_matrix_z = np.array([
+        [np.cos(rotation_angles[2]), -np.sin(rotation_angles[2]), 0, 0],
+        [np.sin(rotation_angles[2]), np.cos(rotation_angles[2]), 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+    ])
+
+    translation_matrix = np.array([
+        [1, 0, 0, translation[0]],
+        [0, 1, 0, translation[1]],
+        [0, 0, 1, translation[2]],
+        [0, 0, 0, 1]
+    ])
+
+    # Combine the transformations
+    combined_rotation_matrix = np.dot(rotation_matrix_z, np.dot(rotation_matrix_y, rotation_matrix_x))
+
+    # Apply transformation based on object type
+    if isinstance(obj, Sphere):
+        obj_copy = Sphere(obj.center.copy(), obj.radius, obj.color)
+
+        obj_copy.center = np.dot(np.append(obj_copy.center, 1), combined_rotation_matrix.T)[:3]
+        obj_copy.center = np.dot(np.append(obj_copy.center, 1), translation_matrix.T)[:3]
+        return obj_copy
+    elif isinstance(obj, Plane):
+        obj_copy = Plane(obj.center.copy(), obj.normal.copy(), obj.color)
+
+        obj_copy.center = np.dot(np.append(obj_copy.center, 1), translation_matrix.T)[:3]
+        obj_copy.center = np.dot(np.append(obj_copy.center, 1), combined_rotation_matrix.T)[:3]
+        obj_copy.normal = np.dot(np.append(obj_copy.normal, 0), combined_rotation_matrix.T)[:3]
+        return obj_copy
+    elif isinstance(obj, Triangles):
+        obj_copy = Triangles(obj.num_triangles, obj.num_vertices, obj.vertices.copy(), obj.triangle_index.copy(), obj.color)
+        for i, triangle in enumerate(obj_copy.triangles):
+            triangle.point1 = np.dot(np.append(triangle.point1, 1), translation_matrix.T)[:3]
+            triangle.point1 = np.dot(np.append(triangle.point1, 1), combined_rotation_matrix.T)[:3]
+            triangle.point2 = np.dot(np.append(triangle.point2, 1), translation_matrix.T)[:3]
+            triangle.point2 = np.dot(np.append(triangle.point2, 1), combined_rotation_matrix.T)[:3]
+            triangle.point3 = np.dot(np.append(triangle.point3, 1), translation_matrix.T)[:3]
+            triangle.point3 = np.dot(np.append(triangle.point3, 1), combined_rotation_matrix.T)[:3]
+            triangle.normal = np.cross(triangle.point1 - triangle.point2, triangle.point1 - triangle.point3)
+            obj_copy.triangles[i] = triangle
+        return obj_copy
+    else:
+        raise ValueError("Unsupported object type")
 
 main()
