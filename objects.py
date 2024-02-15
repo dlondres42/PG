@@ -3,13 +3,25 @@ from math import sqrt
 
 INF = float(2e9 + 7)
 
+class Material:
+    def __init__(self, kd=(0, 0, 0), ks=(0, 0, 0), ka=(0, 0, 0), kr=(0, 0, 0), kt=(0, 0, 0), eta=0):
+        self.kd = kd  # Diffuse coefficient
+        self.ks = ks  # Specular coefficient
+        self.ka = ka  # Ambient coefficient
+        self.kr = kr  # Reflection coefficient
+        self.kt = kt  # Transmission coefficient
+        self.eta = eta  # Roughness coefficient
 
 class Object:
-    def __init__(self, color: tuple):
+    def __init__(self, color: tuple, material: Material = Material()):
         self.color = color
+        self.material = material
 
     def __str__(self) -> str:
-        return f"Object(center={self.center}, radius={self.radius}, color={self.color})"
+        return f"Object(color={self.color}, material={self.material})"
+
+    def __str__(self) -> str:
+        return f"Object(color={self.color}, kd={self.kd}, ks={self.ks}, ka={self.ka}, kr={self.kr}, kt={self.kt}, eta={self.eta})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -19,8 +31,8 @@ class Object:
 
 
 class Sphere(Object):
-    def __init__(self, center: np.array, radius: float, color: tuple):
-        super().__init__(color)
+    def __init__(self, center: np.array, radius: float, color: tuple, material: Material = Material()):
+        super().__init__(color, material)
         self.radius = radius
         self.center = center
 
@@ -37,8 +49,8 @@ class Sphere(Object):
         return min(t1, t2)
 
 class Plane(Object):
-    def __init__(self, center: np.array, normal: np.array, color: tuple):
-        super().__init__(color)
+    def __init__(self, center: np.array, normal: np.array, color: tuple, material: Material = Material()):
+        super().__init__(color, material)
         self.normal = normal
         self.center = center
 
@@ -69,8 +81,8 @@ class Triangle():
         return f"ponto1 = {self.point1} \n ponto2 = {self.point2} \n ponto3 = {self.point3} \n normal = {self.normal}"
 
 class Triangles(Object):
-    def __init__(self, num_triangles: int, num_vertices: int, vertices: np.array, triangle_index: np.array, color: tuple):
-        super().__init__(color)
+    def __init__(self, num_triangles: int, num_vertices: int, vertices: np.array, triangle_index: np.array, color: tuple, material: Material = Material()):
+        super().__init__(color, material)
         self.num_triangles = num_triangles
         self.num_vertices = num_vertices
         self.vertices = vertices

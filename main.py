@@ -2,6 +2,7 @@ import numpy as np
 from camera import Camera
 from color import Color
 from objects import Sphere, Plane, Triangles
+from light import Light
 from scene import Scene
 from PIL import Image
 
@@ -22,15 +23,23 @@ def main():
     v = normalize(np.cross(w, u)) * -1
 
     # objetos
-    test = Triangles(2, 4, np.array([[2, -0.3, 0], [2.5,0.1,0.2], [1.7, 0.5, -0.1], [1.5,0.3,1.2]]), [(0,1,2), (0,2,3)], Color(0, 255, 0))
+
+    #test = Triangles(2, 4, np.array([[2, -0.3, 0], [2.5,0.1,0.2], [1.7, 0.5, -0.1], [1.5,0.3,1.2]]), [(0,1,2), (0,2,3)], Color(0, 255, 0))
     camera = Camera(O, w, u, v, dist)
+
     objects = [
         #Sphere(np.array([2, -0.3, 0]), 0.5, Color(0, 255, 0)),
         affine_transform(Plane(np.array([1,-0.5,0]), np.array([0,1,0]), Color(0,0,255)), translation=(0,0,0), rotation_angles=(0,0,0)),
-        affine_transform(Sphere(np.array([4,1,1]), 0.3, Color(155,133,200)), translation=(2,1,0), rotation_angles=(0,0,0)),
-        affine_transform(Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(250, 70, 55)), translation=(0,0,0), rotation_angles=(60,0,0))
+        affine_transform(Sphere(np.array([4,1,1]), 0.3, Color(155,133,200)), translation=(3,0,0), rotation_angles=(0,0,0)),
+        Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(250, 70, 55))
     ]
-    scene = Scene(camera, objects, hres, vres)
+
+    lights = [
+        Light(np.array([5, 5, 5]), (255, 255, 255)),
+        Light(np.array([-5, 5, 5]), (255, 255, 255))
+    ]
+    
+    scene = Scene(camera, objects, hres, vres, lights)
     mtx = render(scene)
     image = Image.fromarray(mtx)
     # image.save("output.png")  # save img
