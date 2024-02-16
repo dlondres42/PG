@@ -1,7 +1,7 @@
 import numpy as np
 
 class Light:
-    def __init__(self, position: np.array, intensity: tuple):
+    def __init__(self, position: np.array, intensity: np.array):
         self.position = position
         self.intensity = intensity
 

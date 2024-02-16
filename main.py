@@ -1,7 +1,7 @@
 import numpy as np
 from camera import Camera
 from color import Color
-from objects import Sphere, Plane, Triangles
+from objects import Sphere, Plane, Triangles, Material
 from light import Light
 from scene import Scene
 from PIL import Image
@@ -28,18 +28,21 @@ def main():
     camera = Camera(O, w, u, v, dist)
 
     objects = [
-        #Sphere(np.array([2, -0.3, 0]), 0.5, Color(0, 255, 0)),
-        affine_transform(Plane(np.array([1,-0.5,0]), np.array([0,1,0]), Color(0,0,255)), translation=(0,0,0), rotation_angles=(0,0,0)),
-        affine_transform(Sphere(np.array([4,1,1]), 0.3, Color(155,133,200)), translation=(3,0,0), rotation_angles=(0,0,0)),
-        Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(250, 70, 55))
+        Sphere(np.array([2, 0, 0]), 0.5, Color(0, 255, 0), Material(kd=(0.5,0.5,0.5), ks=(0.25,0.25,0.25), ka=(0.2,0.2,0.2)))
+        #affine_transform(Plane(np.array([1,-0.5,0]), np.array([0,1,0]), Color(0,0,255), Material(ka=(1,1,1))), translation=(0,0,0), rotation_angles=(0,0,0)),
+        #affine_transform(Sphere(np.array([4,1,1]), 0.3, Color(155,133,200), Material(ka=(1,1,1))), translation=(3,0,0), rotation_angles=(0,0,0)),
+        #Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(250, 70, 55), Material(ka=(1,1,1)))
     ]
 
+    ambient_light = (10, 10, 10)
+
     lights = [
-        Light(np.array([5, 5, 5]), (255, 255, 255)),
-        Light(np.array([-5, 5, 5]), (255, 255, 255))
+        #Light(np.array([0, 5, 5]), np.array([255, 255, 255])),
+        Light(np.array([5, 5, 5]), np.array([255, 255, 255]))
     ]
-    
-    scene = Scene(camera, objects, hres, vres, lights)
+
+    scene = Scene(camera, objects, hres, vres, ambient_light, lights)
+
     mtx = render(scene)
     image = Image.fromarray(mtx)
     # image.save("output.png")  # save img
@@ -82,11 +85,76 @@ def find_nearest(ray_origin, ray_direction, scene: Scene):
     return t_min, obj_hit
 
 
+def reflect_ray(L, normal):
+    """ 
+    Function used in ray_color in order to compute the
+    reflector vector R for the specular component
+
+    """
+    # Compute the dot product of normal and L
+    dot_product = np.dot(normal, L)
+
+    # Compute the reflection vector R
+    R = 2 * dot_product * normal - L
+
+    return R
+
 def ray_color(ray_origin, ray_direction, scene: Scene):
     t_min, obj_hit = find_nearest(ray_origin, ray_direction, scene)
     color = Color(229, 255, 204)
     if obj_hit is not None:
-        color = obj_hit.color
+        ka = np.array(obj_hit.material.ka) # Ambient coefficient
+        kd = np.array(obj_hit.material.kd) # Diffuse coefficient
+        ks = np.array(obj_hit.material.ks) # Specular coefficient
+        n = np.array(obj_hit.material.eta) # Roughness coefficient
+
+        Ia = np.array(scene.ambient_light)
+
+        intersection_point = ray_origin + t_min * ray_direction
+
+        
+        if isinstance(obj_hit, Sphere):
+            normal = normalize(intersection_point - obj_hit.center)
+        elif isinstance(obj_hit, Plane):
+            normal = obj_hit.normal
+        elif isinstance(obj_hit, Triangles):
+            normal = obj_hit.normal_at(intersection_point)  
+
+        # View vector (direction towards the camera)
+        V = normalize(scene.camera.origin - intersection_point)
+
+        # Initialize the total color contribution
+        total_color = np.array([0,0,0])
+        total_color = total_color.astype(np.float64)
+
+        # Ambient component
+        ambient_color = ka * Ia
+        total_color += ambient_color
+
+        for light in scene.lights:
+            # Direction from the intersection point to the light
+            L = normalize(light.position - intersection_point)
+
+            # Diffuse component
+            diffuse_dot = max(np.dot(normal, L), 0)
+            diffuse_color = kd * light.intensity * diffuse_dot
+            total_color += diffuse_color
+
+            # Specular component
+            R = reflect_ray(L, normal)
+            specular_dot = max(np.dot(R, V), 0)
+            specular_color = ks * light.intensity * (specular_dot ** n)
+            total_color += specular_color
+
+            color_tuple = (obj_hit.color.r, obj_hit.color.g, obj_hit.color.b)
+            color_array = np.array(color_tuple) / 255
+
+            # Perform element-wise multiplication
+            total_color *= color_array
+
+        r, g, b = total_color.clip(0, 255)
+        color = Color(r, g, b)
+        #color = obj_hit.color
     return t_min, color
 
 

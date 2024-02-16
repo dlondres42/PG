@@ -132,3 +132,15 @@ class Triangles(Object):
                 min_t = min(min_t, t)
 
         return min_t if min_t != INF else INF
+    
+    def normal_at(self, intersection_point):
+        # Find the triangle closest to the intersection point
+        closest_triangle = None
+        min_distance = INF
+        for triangle in self.triangles:
+            for vertex in [triangle.point1, triangle.point2, triangle.point3]:
+                distance = np.linalg.norm(vertex - intersection_point)
+                if distance < min_distance:
+                    closest_triangle = triangle
+                    min_distance = distance
+        return closest_triangle.normal
