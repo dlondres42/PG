@@ -28,16 +28,16 @@ def main():
     camera = Camera(O, w, u, v, dist)
 
     objects = [
-        Sphere(np.array([2, 0, 0]), 0.5, Color(0, 255, 0), Material(kd=(0.5,0.5,0.5), ks=(0.25,0.25,0.25), ka=(0.2,0.2,0.2)))
+        Sphere(np.array([2, 0, 0]), 0.2, Color(0, 255, 0), Material(kd=(0.5,0.5,0.5), ks=(0.25,0.25,0.25), ka=(0.2,0.2,0.2))),
         #affine_transform(Plane(np.array([1,-0.5,0]), np.array([0,1,0]), Color(0,0,255), Material(ka=(1,1,1))), translation=(0,0,0), rotation_angles=(0,0,0)),
-        #affine_transform(Sphere(np.array([4,1,1]), 0.3, Color(155,133,200), Material(ka=(1,1,1))), translation=(3,0,0), rotation_angles=(0,0,0)),
-        #Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(250, 70, 55), Material(ka=(1,1,1)))
+        affine_transform(Sphere(np.array([2,0,0]), 0.3, Color(0,0,255), Material(kd=(0.5,0.5,0.5), ks=(0.25,0.25,0.25), ka=(0.2,0.2,0.2))), translation=(0,0,0), rotation_angles=(0,0,0)),
+        # Triangles(2, 4, np.array([[4, 1, 0], [4,1,1], [4, 1, -1], [4,0,0]]), [(0,1,3), (1,2,3)], Color(250, 70, 55), Material(ka=(1,1,1)))
     ]
 
     ambient_light = (10, 10, 10)
 
     lights = [
-        #Light(np.array([0, 5, 5]), np.array([255, 255, 255])),
+        Light(np.array([0, 5, 5]), np.array([255, 223, 142])),
         Light(np.array([5, 5, 5]), np.array([255, 255, 255]))
     ]
 
@@ -45,8 +45,8 @@ def main():
 
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    # image.save("output.png")  # save img
-    image.show()  # show img
+    image.save("output.png")  # save img
+    # image.show()  # show img
 
 
 def render(scene: Scene) -> np.array:
@@ -101,7 +101,7 @@ def reflect_ray(L, normal):
 
 def ray_color(ray_origin, ray_direction, scene: Scene):
     t_min, obj_hit = find_nearest(ray_origin, ray_direction, scene)
-    color = Color(229, 255, 204)
+    color = Color(0, 0, 0)
     if obj_hit is not None:
         ka = np.array(obj_hit.material.ka) # Ambient coefficient
         kd = np.array(obj_hit.material.kd) # Diffuse coefficient
