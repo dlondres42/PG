@@ -7,11 +7,11 @@ INF = float(2e9 + 7)
 class Material:
     def __init__(
         self,
-        kd=np.array(0.25, 0.25, 0.25),
-        ks=np.array(0.25, 0.25, 0.25),
-        ka=np.array(0.25, 0.25, 0.25),
-        kr=np.array(0.25, 0.25, 0.25),
-        kt=np.array(0.25, 0.25, 0.25),
+        kd=np.array([0.25, 0.25, 0.25]),
+        ks=np.array([0.25, 0.25, 0.25]),
+        ka=np.array([0.25, 0.25, 0.25]),
+        kr=np.array([0.25, 0.25, 0.25]),
+        kt=np.array([0.25, 0.25, 0.25]),
         eta=5,
     ):
         self.kd = kd  # Diffuse coefficient
@@ -88,17 +88,22 @@ class Plane(Object):
 
 class Triangle:
     def __init__(self, vertices: np.array) -> None:
-        # self.point1, self.point2, self.point3 = self.ensure_counterclockwise(vertices)
         self.point1 = vertices[0]
         self.point2 = vertices[1]
         self.point3 = vertices[2]
-        self.normal = np.cross(self.point1 - self.point2, self.point1 - self.point3)
+        self.normal = self.calculate_normal()
 
     @staticmethod
     def ensure_counterclockwise(vertices: np.array) -> np.array:
-        if np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])[2] < 0:
-            return vertices[::-1]
+        v0, v1, v2 = vertices
+        if np.dot(np.cross(v1 - v0, v2 - v0), v0) < 0:
+            return v0, v2, v1
         return vertices
+
+    def calculate_normal(self) -> np.array:
+        vertices = self.ensure_counterclockwise([self.point1, self.point2, self.point3])
+        v0, v1, v2 = vertices
+        return np.cross(v1 - v0, v2 - v0)
 
     def __str__(self) -> str:
         return f"ponto1 = {self.point1} \n ponto2 = {self.point2} \n ponto3 = {self.point3} \n normal = {self.normal}"

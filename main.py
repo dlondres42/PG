@@ -34,36 +34,46 @@ def main():
             Color(0, 255, 0),
             Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
         ),
-        # affine_transform(Plane(np.array([1,-0.5,0]), np.array([0,1,0]), Color(0,0,255), Material(ka=(1,1,1))), translation=(0,0,0), rotation_angles=(0,0,0)),
         # affine_transform(
-        #     Sphere(
-        #         np.array([1, 0, 0]),
-        #         0.1,
+        #     Plane(
+        #         np.array([1, -0.5, 0]),
+        #         np.array([0, 1, 0]),
         #         Color(0, 0, 255),
-        #         Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
+        #         Material(ka=(1, 1, 1)),
         #     ),
-        #     translation=(0, -0.2, 0),
+        #     translation=(0, 0, 0),
         #     rotation_angles=(0, 0, 0),
         # ),
-        #     affine_transform(
-        #         Triangles(
-        #             2,
-        #             4,
-        #             np.array([[4, 1, 0], [4, 1, 1], [4, 1, -1], [4, 0, 0]]),
-        #             [(0, 1, 3), (1, 2, 3)],
-        #             Color(250, 70, 55),
-        #             Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
-        #         ),
-        #         translation=(0, 0, 0),
-        #         rotation_angles=(45, 0, 0),
-        #     ),
+        affine_transform(
+            Sphere(
+                np.array([1, 0, 0]),
+                0.1,
+                Color(0, 0, 255),
+                Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
+            ),
+            translation=(0, -0.2, 0),
+            rotation_angles=(0, 0, 0),
+        ),
+        affine_transform(
+            Triangles(
+                1,
+                4,
+                np.array([[4, 1, 0], [4, 1, 1], [4, 1, -1], [4, 0, 0]]),
+                [(0, 1, 3)],
+                Color(250, 70, 55),
+                Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
+            ),
+            translation=(0, 0, 0),
+            rotation_angles=(45, 0, 0),
+        ),
     ]
 
-    ambient_light = (10, 10, 10)
+    ambient_light = (255, 255, 255)
 
     lights = [
         Light(np.array([0, 5, 5]), np.array([255, 223, 142])),
         Light(np.array([5, 5, 5]), np.array([255, 255, 255])),
+        Light(np.array([47, 8, 10]), np.array([225, 223, 142])),
     ]
 
     scene = Scene(camera, objects, hres, vres, ambient_light, lights)
