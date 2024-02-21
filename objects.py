@@ -99,9 +99,15 @@ class Triangle:
 
     @staticmethod
     def ensure_counterclockwise(vertices: np.array) -> np.array:
-        if np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])[2] < 0:
-            return vertices[::-1]
+        v0, v1, v2 = vertices
+        if np.dot(np.cross(v1 - v0, v2 - v0), v0) < 0:
+            return v0, v2, v1
         return vertices
+
+    def calculate_normal(self) -> np.array:
+        vertices = self.ensure_counterclockwise([self.point1, self.point2, self.point3])
+        v0, v1, v2 = vertices
+        return np.cross(v1 - v0, v2 - v0)
 
     def __str__(self) -> str:
         return f"ponto1 = {self.point1} \n ponto2 = {self.point2} \n ponto3 = {self.point3} \n normal = {self.normal}"
