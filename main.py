@@ -7,7 +7,7 @@ from scene import Scene
 from PIL import Image
 
 INF = float(2e9 + 7)
-
+MAX_DEPTH = 3
 
 def main():
     # inputs do usuario
@@ -28,42 +28,44 @@ def main():
     camera = Camera(O, w, u, v, dist)
 
     objects = [
+        Triangles(
+            1,
+            3,
+            np.array([[4, 1, 0], [4, -0.5, 1], [3, -0.5, -1]] * 3), 
+            [(0,1,2)], 
+            Color(200,0,0),
+            Material(kd=(0.1, 0.1, 0.1), ks=(0.4, 0.4, 0.4), ka=(0.2, 0.2, 0.2), eta=15, ior=1.3, kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8))
+        ),
         Sphere(
-            np.array([2, 0, 0]),
+            np.array([1.7, 0.1, 0.3]),
+            0.25,
+            Color(0, 0, 255),
+            Material(kd=(0.5, 0.5, 0.5), ks=(0.1, 0.1, 0.1), ka=(0.2, 0.2, 0.2), eta=15,  kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8), ior=1.2),
+        ),
+        Sphere(
+            np.array([2, 0.05, 0.4]),
             0.2,
             Color(0, 255, 0),
-            Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
+            Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2), kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8), ior=1.3)
         ),
-        # affine_transform(Plane(np.array([1,-0.5,0]), np.array([0,1,0]), Color(0,0,255), Material(ka=(1,1,1))), translation=(0,0,0), rotation_angles=(0,0,0)),
-        # affine_transform(
-        #     Sphere(
-        #         np.array([1, 0, 0]),
-        #         0.1,
-        #         Color(0, 0, 255),
-        #         Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
-        #     ),
-        #     translation=(0, -0.2, 0),
-        #     rotation_angles=(0, 0, 0),
-        # ),
-        #     affine_transform(
-        #         Triangles(
-        #             2,
-        #             4,
-        #             np.array([[4, 1, 0], [4, 1, 1], [4, 1, -1], [4, 0, 0]]),
-        #             [(0, 1, 3), (1, 2, 3)],
-        #             Color(250, 70, 55),
-        #             Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2)),
-        #         ),
-        #         translation=(0, 0, 0),
-        #         rotation_angles=(45, 0, 0),
-        #     ),
-    ]
+        Plane(
+            np.array([1, -0.5, 0]),
+            np.array([0, 1, 0]), 
+            Color(0,133,175),
+            Material(kd=(0.5, 0.5, 0.5), ks=(0.1, 0.1, 0.1), ka=(0.2, 0.2, 0.2), eta=15, ior=1.3, kt=(0.7,0.7,0.7))
+        ),
 
-    ambient_light = (10, 10, 10)
+    ]
+    """
+        
+
+    """
+    ambient_light = (150, 150, 150)
 
     lights = [
-        Light(np.array([0, 5, 5]), np.array([255, 223, 142])),
-        Light(np.array([5, 5, 5]), np.array([255, 255, 255])),
+        #Light(np.array([0, 4, 2]), np.array([255, 223, 142])),
+        #Light(np.array([0, -2, 1]), np.array([255, 255, 255])),
+        Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
     ]
 
     scene = Scene(camera, objects, hres, vres, ambient_light, lights)
@@ -71,7 +73,7 @@ def main():
     mtx = render(scene)
     image = Image.fromarray(mtx)
     image.save("output.png")  # save img
-    # image.show()  # show img
+    #image.show()  # show img
 
 
 def render(scene: Scene) -> np.array:
@@ -110,6 +112,25 @@ def find_nearest(ray_origin, ray_direction, scene: Scene):
     return t_min, obj_hit
 
 
+def refract_ray(I, N, ior):
+    cosi = -np.dot(I, N)
+    etai = 1
+    etat = ior
+
+    if cosi < 0:
+        cosi = -cosi
+    else:
+        etai, etat = etat, etai
+        N = -N
+
+    eta = etai / etat
+    k = 1 - eta ** 2 * (1 - cosi ** 2)
+
+    if k < 0:
+        return None 
+
+    return eta * I + (eta * cosi - np.sqrt(k)) * N
+
 def reflect_ray(L, normal):
     """
     Function used in ray_color in order to compute the
@@ -120,19 +141,26 @@ def reflect_ray(L, normal):
     dot_product = np.dot(normal, L)
 
     # Compute the reflection vector R
-    R = 2 * dot_product * normal - L
+    R = (2 * dot_product * normal) - L
 
     return R
 
 
-def ray_color(ray_origin, ray_direction, scene: Scene):
+def ray_color(ray_origin, ray_direction, scene: Scene, depth= 0):
+    if depth > MAX_DEPTH:
+        return None, Color(0, 0, 0)
+    
     t_min, obj_hit = find_nearest(ray_origin, ray_direction, scene)
     color = Color(0, 0, 0)
+
     if obj_hit is not None:
         ka = np.array(obj_hit.material.ka)  # Ambient coefficient
         kd = np.array(obj_hit.material.kd)  # Diffuse coefficient
         ks = np.array(obj_hit.material.ks)  # Specular coefficient
+        kr = np.array(obj_hit.material.kr)  # Reflection coefficient
+        kt = np.array(obj_hit.material.kt)  # Transmission coefficient
         n = np.array(obj_hit.material.eta)  # Roughness coefficient
+        ior = np.array(obj_hit.material.ior)  # Index of Reflexion
 
         Ia = np.array(scene.ambient_light)
 
@@ -162,14 +190,32 @@ def ray_color(ray_origin, ray_direction, scene: Scene):
 
             # Diffuse component
             diffuse_dot = max(np.dot(normal, L), 0)
+            #diffuse_dot = np.dot(normal, L)
             diffuse_color = kd * light.intensity * diffuse_dot
-            total_color += diffuse_color % 256
+            total_color += diffuse_color
+            #if diffuse_dot > 0:
+            #    total_color += diffuse_color % 256
 
             # Specular component
-            R = reflect_ray(L, normal)
+            R = normalize(reflect_ray(L, normal))
             specular_dot = max(np.dot(R, V), 0)
+            #specular_dot = np.dot(R, V)
             specular_color = ks * light.intensity * (specular_dot**n)
-            total_color += specular_color
+            total_color += specular_color 
+            #if specular_color > 0:
+            #    total_color += specular_color 
+
+            # Recursive reflections
+            _, reflected_ray_color = ray_color(intersection_point, R, scene, depth + 1)
+            reflected_ray_color = np.array([reflected_ray_color.r, reflected_ray_color.g, reflected_ray_color.b])
+            total_color += kr * reflected_ray_color
+
+            # Refraction
+            refracted_ray_direction = refract_ray(ray_direction, normal, ior)
+            if refracted_ray_direction is not None:
+                _, refracted_ray_color = ray_color(intersection_point, refracted_ray_direction, scene, depth + 1)
+                refracted_ray_color = np.array([refracted_ray_color.r, refracted_ray_color.g, refracted_ray_color.b])
+                total_color += kt * refracted_ray_color     
 
             color_tuple = (obj_hit.color.r, obj_hit.color.g, obj_hit.color.b)
             color_array = np.array(color_tuple) / 255
