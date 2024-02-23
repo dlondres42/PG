@@ -94,7 +94,7 @@ class Triangle:
         self.point1 = vertices[0]
         self.point2 = vertices[1]
         self.point3 = vertices[2]
-        self.normal = np.cross(self.point1 - self.point2, self.point1 - self.point3) * -1
+        self.normal = np.cross(self.point1 - self.point2, self.point1 - self.point3) *-1
         print(self.normal)
 
     @staticmethod

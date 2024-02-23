@@ -29,42 +29,43 @@ def main():
 
     objects = [
         Triangles(
-            1,
-            3,
-            np.array([[4, 1, 0], [4, -0.5, 1], [3, -0.5, -1]] * 3), 
-            [(0,1,2)], 
+            2,
+            4,
+            np.array([[4, 1.5, 0], [4, -0.5, 1], [4, -0.5, -1], [4, 1.5, -1]]), 
+            [(0,1,2), (0,2,3)], 
             Color(200,0,0),
-            Material(kd=(0.1, 0.1, 0.1), ks=(0.4, 0.4, 0.4), ka=(0.2, 0.2, 0.2), eta=15, ior=1.3, kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8))
+            Material(kd=(0.2, 0.2, 0.2), ks=(0.6, 0.6, 0.6), ka=(0.2, 0.2, 0.2), eta=15, ior=1.01, kt=(0.9,0.9,0.9), kr=(0.7,0.7,0.7))
         ),
         Sphere(
-            np.array([1.7, 0.1, 0.3]),
+            np.array([2.5, 0.1, -0.5]),
             0.25,
-            Color(0, 0, 255),
-            Material(kd=(0.5, 0.5, 0.5), ks=(0.1, 0.1, 0.1), ka=(0.2, 0.2, 0.2), eta=15,  kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8), ior=1.2),
+            Color(180, 212, 255),
+            Material(kd=(0.5, 0.5, 0.5), ks=(0.1, 0.1, 0.1), ka=(0.2, 0.2, 0.2), eta=15,  kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8), ior=1.02),
         ),
         Sphere(
-            np.array([2, 0.05, 0.4]),
-            0.2,
-            Color(0, 255, 0),
-            Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2), kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8), ior=1.3)
+            np.array([3.1, 0.1, 0.4]),
+            0.3,
+            Color(241, 250, 218),
+            Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2), kt=(0.9,0.9,0.9), kr=(0.8, 0.8, 0.8), ior=1.02)
         ),
+
         Plane(
             np.array([1, -0.5, 0]),
             np.array([0, 1, 0]), 
             Color(0,133,175),
-            Material(kd=(0.5, 0.5, 0.5), ks=(0.1, 0.1, 0.1), ka=(0.2, 0.2, 0.2), eta=15, ior=1.3, kt=(0.7,0.7,0.7))
+            Material(kd=(0.2, 0.2, 0.2), ks=(0.5, 0.5, 0.5), ka=(0.2, 0.2, 0.2), eta=15, ior=1.3, kt=(0.7,0.7,0.7))
         ),
 
     ]
     """
-        
+
 
     """
     ambient_light = (150, 150, 150)
 
     lights = [
-        #Light(np.array([0, 4, 2]), np.array([255, 223, 142])),
-        #Light(np.array([0, -2, 1]), np.array([255, 255, 255])),
+        #Light(np.array([0, 4, -2]), np.array([255, 223, 142])),
+        #Light(np.array([0, 2, 1]), np.array([255, 255, 255])),
         Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
     ]
 
@@ -173,6 +174,7 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth= 0):
         elif isinstance(obj_hit, Triangles):
             normal = obj_hit.normal_at(intersection_point)
 
+        normal = normalize(normal)
         # View vector (direction towards the camera)
         V = normalize(scene.camera.origin - intersection_point)
 
@@ -183,6 +185,7 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth= 0):
         # Ambient component
         ambient_color = ka * Ia
         total_color += ambient_color
+
 
         for light in scene.lights:
             # Direction from the intersection point to the light
@@ -217,11 +220,11 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth= 0):
                 refracted_ray_color = np.array([refracted_ray_color.r, refracted_ray_color.g, refracted_ray_color.b])
                 total_color += kt * refracted_ray_color     
 
-            color_tuple = (obj_hit.color.r, obj_hit.color.g, obj_hit.color.b)
-            color_array = np.array(color_tuple) / 255
+        color_tuple = (obj_hit.color.r, obj_hit.color.g, obj_hit.color.b)
+        color_array = np.array(color_tuple) / 255
 
             # Perform element-wise multiplication
-            total_color *= color_array
+        total_color *= color_array
 
         r, g, b = total_color.clip(0, 255)
         color = Color(r, g, b)
