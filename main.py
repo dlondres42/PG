@@ -9,6 +9,7 @@ from PIL import Image
 INF = float(2e9 + 7)
 MAX_DEPTH = 3
 
+
 def main():
     # inputs do usuario
     O = np.array([0, 0, 0])  # origem
@@ -29,33 +30,77 @@ def main():
 
     objects = [
         Triangles(
-            2,
+            1,
             4,
-            np.array([[4, 1.5, 0], [4, -0.5, 1], [4, -0.5, -1], [4, 1.5, -1]]), 
-            [(0,1,2), (0,2,3)], 
-            Color(200,0,0),
-            Material(kd=(0.2, 0.2, 0.2), ks=(0.6, 0.6, 0.6), ka=(0.2, 0.2, 0.2), eta=15, ior=1.01, kt=(0.9,0.9,0.9), kr=(0.7,0.7,0.7))
+            np.array([[4, 1.5, 0], [4, -0.5, 1], [4, -0.5, -1], [4, 1.5, -1]]),
+            [(0, 1, 2), (0, 2, 3)],
+            Color(255, 0, 77),
+            Material(
+                kd=(0.2, 0.2, 0.2),
+                ks=(0.6, 0.6, 0.6),
+                ka=(0.2, 0.2, 0.2),
+                eta=15,
+                ior=1.01,
+                kt=(0.9, 0.9, 0.9),
+                kr=(0.7, 0.7, 0.7),
+            ),
+        ),
+        Triangles(
+            1,
+            4,
+            np.array([[4, 1.5, 0], [4, -0.5, 1], [4, -0.5, -1], [4, 1.5, -1]]),
+            [(0, 2, 3)],
+            Color(250, 239, 93),
+            Material(
+                kd=(0.2, 0.2, 0.2),
+                ks=(0.6, 0.6, 0.6),
+                ka=(0.2, 0.2, 0.2),
+                eta=15,
+                ior=1.01,
+                kt=(0.9, 0.9, 0.9),
+                kr=(0.7, 0.7, 0.7),
+            ),
         ),
         Sphere(
             np.array([2.5, 0.1, -0.5]),
             0.25,
-            Color(180, 212, 255),
-            Material(kd=(0.5, 0.5, 0.5), ks=(0.1, 0.1, 0.1), ka=(0.2, 0.2, 0.2), eta=15,  kt=(0.7,0.7,0.7), kr=(0.8,0.8,0.8), ior=1.02),
+            Color(142, 237, 232),
+            Material(
+                kd=(0.3, 0.3, 0.3),
+                ks=(0.6, 0.6, 0.6),
+                ka=(0.2, 0.2, 0.2),
+                eta=15,
+                kt=(0.1, 0.1, 0.1),
+                kr=(0.8, 0.8, 0.8),
+                ior=1.02,
+            ),
         ),
         Sphere(
             np.array([3.1, 0.1, 0.4]),
             0.3,
             Color(241, 250, 218),
-            Material(kd=(0.5, 0.5, 0.5), ks=(0.25, 0.25, 0.25), ka=(0.2, 0.2, 0.2), kt=(0.9,0.9,0.9), kr=(0.8, 0.8, 0.8), ior=1.02)
+            Material(
+                kd=(0.5, 0.5, 0.5),
+                ks=(0.25, 0.25, 0.25),
+                ka=(0.2, 0.2, 0.2),
+                kt=(0.9, 0.9, 0.9),
+                kr=(0.8, 0.8, 0.8),
+                ior=1.02,
+            ),
         ),
-
         Plane(
             np.array([1, -0.5, 0]),
-            np.array([0, 1, 0]), 
-            Color(0,133,175),
-            Material(kd=(0.2, 0.2, 0.2), ks=(0.5, 0.5, 0.5), ka=(0.2, 0.2, 0.2), eta=15, ior=1.3, kt=(0.7,0.7,0.7))
+            np.array([0, 1, 0]),
+            Color(128, 174, 189),
+            Material(
+                kd=(0.2, 0.2, 0.2),
+                ks=(0.5, 0.5, 0.5),
+                ka=(0.2, 0.2, 0.2),
+                eta=15,
+                ior=1.3,
+                kt=(0.7, 0.7, 0.7),
+            ),
         ),
-
     ]
     """
 
@@ -64,8 +109,8 @@ def main():
     ambient_light = (150, 150, 150)
 
     lights = [
-        #Light(np.array([0, 4, -2]), np.array([255, 223, 142])),
-        #Light(np.array([0, 2, 1]), np.array([255, 255, 255])),
+        # Light(np.array([0, 4, -2]), np.array([255, 223, 142])),
+        # Light(np.array([0, 2, 1]), np.array([255, 255, 255])),
         Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
     ]
 
@@ -74,7 +119,7 @@ def main():
     mtx = render(scene)
     image = Image.fromarray(mtx)
     image.save("output.png")  # save img
-    #image.show()  # show img
+    # image.show()  # show img
 
 
 def render(scene: Scene) -> np.array:
@@ -125,12 +170,13 @@ def refract_ray(I, N, ior):
         N = -N
 
     eta = etai / etat
-    k = 1 - eta ** 2 * (1 - cosi ** 2)
+    k = 1 - eta**2 * (1 - cosi**2)
 
     if k < 0:
-        return None 
+        return None
 
     return eta * I + (eta * cosi - np.sqrt(k)) * N
+
 
 def reflect_ray(L, normal):
     """
@@ -147,10 +193,10 @@ def reflect_ray(L, normal):
     return R
 
 
-def ray_color(ray_origin, ray_direction, scene: Scene, depth= 0):
+def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
     if depth > MAX_DEPTH:
         return None, Color(0, 0, 0)
-    
+
     t_min, obj_hit = find_nearest(ray_origin, ray_direction, scene)
     color = Color(0, 0, 0)
 
@@ -186,44 +232,53 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth= 0):
         ambient_color = ka * Ia
         total_color += ambient_color
 
-
         for light in scene.lights:
             # Direction from the intersection point to the light
             L = normalize(light.position - intersection_point)
 
             # Diffuse component
             diffuse_dot = max(np.dot(normal, L), 0)
-            #diffuse_dot = np.dot(normal, L)
+            # diffuse_dot = np.dot(normal, L)
             diffuse_color = kd * light.intensity * diffuse_dot
             total_color += diffuse_color
-            #if diffuse_dot > 0:
+            # if diffuse_dot > 0:
             #    total_color += diffuse_color % 256
 
             # Specular component
             R = normalize(reflect_ray(L, normal))
             specular_dot = max(np.dot(R, V), 0)
-            #specular_dot = np.dot(R, V)
+            # specular_dot = np.dot(R, V)
             specular_color = ks * light.intensity * (specular_dot**n)
-            total_color += specular_color 
-            #if specular_color > 0:
-            #    total_color += specular_color 
+            total_color += specular_color
+            # if specular_color > 0:
+            #    total_color += specular_color
 
             # Recursive reflections
             _, reflected_ray_color = ray_color(intersection_point, R, scene, depth + 1)
-            reflected_ray_color = np.array([reflected_ray_color.r, reflected_ray_color.g, reflected_ray_color.b])
+            reflected_ray_color = np.array(
+                [reflected_ray_color.r, reflected_ray_color.g, reflected_ray_color.b]
+            )
             total_color += kr * reflected_ray_color
 
             # Refraction
             refracted_ray_direction = refract_ray(ray_direction, normal, ior)
             if refracted_ray_direction is not None:
-                _, refracted_ray_color = ray_color(intersection_point, refracted_ray_direction, scene, depth + 1)
-                refracted_ray_color = np.array([refracted_ray_color.r, refracted_ray_color.g, refracted_ray_color.b])
-                total_color += kt * refracted_ray_color     
+                _, refracted_ray_color = ray_color(
+                    intersection_point, refracted_ray_direction, scene, depth + 1
+                )
+                refracted_ray_color = np.array(
+                    [
+                        refracted_ray_color.r,
+                        refracted_ray_color.g,
+                        refracted_ray_color.b,
+                    ]
+                )
+                total_color += kt * refracted_ray_color
 
         color_tuple = (obj_hit.color.r, obj_hit.color.g, obj_hit.color.b)
         color_array = np.array(color_tuple) / 255
 
-            # Perform element-wise multiplication
+        # Perform element-wise multiplication
         total_color *= color_array
 
         r, g, b = total_color.clip(0, 255)

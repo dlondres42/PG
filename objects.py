@@ -13,7 +13,7 @@ class Material:
         kr=np.array([0.25, 0.25, 0.25]),
         kt=np.array([0.25, 0.25, 0.25]),
         eta=5,
-        ior = 1
+        ior=1,
     ):
         self.kd = kd  # Diffuse coefficient
         self.ks = ks  # Specular coefficient
@@ -21,7 +21,7 @@ class Material:
         self.kr = kr  # Reflection coefficient
         self.kt = kt  # Transmission coefficient
         self.eta = eta  # Roughness coefficient
-        self.ior = ior # Index of refraction
+        self.ior = ior  # Index of refraction
 
 
 class Object:
@@ -90,12 +90,13 @@ class Plane(Object):
 
 class Triangle:
     def __init__(self, vertices: np.array) -> None:
-        #self.point1, self.point2, self.point3 = self.ensure_counterclockwise(vertices)
+        # self.point1, self.point2, self.point3 = self.ensure_counterclockwise(vertices)
         self.point1 = vertices[0]
         self.point2 = vertices[1]
         self.point3 = vertices[2]
-        self.normal = np.cross(self.point1 - self.point2, self.point1 - self.point3) *-1
-        print(self.normal)
+        self.normal = (
+            np.cross(self.point1 - self.point2, self.point1 - self.point3) * -1
+        )
 
     @staticmethod
     def ensure_counterclockwise(vertices: np.array) -> np.array:
