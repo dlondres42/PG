@@ -191,3 +191,146 @@ class Triangles(Object):
                     closest_triangle = triangle
                     min_distance = distance
         return closest_triangle.normal
+
+
+class BezierSurface(Object):
+    def __init__(self, control_points: np.array, color: tuple, material: Material = Material()):
+        super().__init__(color, material)
+        self.control_points = control_points
+
+    def __str__(self) -> str:
+        return f"BezierSurface(color={self.color}, material={self.material}, control_points={self.control_points})"
+
+    def __repr__(self) -> str:
+        return str(self)
+    
+    def evaluate(self, u, v):
+        # Evaluate the Bezier surface at parameter values (u, v)
+        # Compute the blending functions for each direction (u and v)
+        blend_u = self._blend_function(u)
+        blend_v = self._blend_function(v)
+
+        # Compute the surface point using the tensor product of the blending functions
+        surface_point = np.zeros(3)
+        for i in range(len(self.control_points)):
+            for j in range(len(self.control_points[0])):
+                surface_point += blend_u[i] * blend_v[j] * self.control_points[i][j]
+
+        return surface_point
+
+    def _blend_function(self, t):
+        # Compute the blending function for parameter t
+        n = len(self.control_points) - 1  # Degree of the Bezier surface
+        blend = np.zeros(n + 1)
+        for i in range(n + 1):
+            blend[i] = self._binomial_coefficient(n, i) * (1 - t)**(n - i) * t**i
+        return blend
+
+    def _binomial_coefficient(self, n, k):
+        # Compute the binomial coefficient C(n, k)
+        return np.math.factorial(n) / (np.math.factorial(k) * np.math.factorial(n - k))
+    
+    def _intersect_patch(self, ray_origin, ray_direction, p00, p01, p10, p11):
+        # Compute vertices of triangles formed by the patch
+        vertices = [
+            p00, p01, p11,
+            p00, p11, p10
+        ]
+
+        # Define a Triangles object
+        patch_triangles = Triangles(2, len(vertices), np.array(vertices), [(0, 1, 2), (0, 2, 3)], self.color, self.material)
+
+        # Compute intersection using Triangles' intersect method
+        t = patch_triangles.intersect(ray_origin, ray_direction)
+
+        return t
+    
+
+    def intersect(self, ray_origin, ray_direction):
+        min_t = INF
+        # Iterate over the control points to form the Bezier patches
+        for i in range(len(self.control_points) - 1):
+            for j in range(len(self.control_points[0]) - 1):
+                # Extract control points for the current patch
+                p00 = self.control_points[i][j]
+                p01 = self.control_points[i][j+1]
+                p10 = self.control_points[i+1][j]
+                p11 = self.control_points[i+1][j+1]
+                # Compute intersection with the patch
+                t = self._intersect_patch(ray_origin, ray_direction, p00, p01, p10, p11)
+                # Update minimum intersection distance
+                min_t = min(min_t, t)
+        return min_t if min_t != INF else INF
+    
+    def calculate_bezier_normal(self, u, v):
+        # Adjusted computation of partial derivatives
+        blend_u = self._blend_function(u)
+        blend_v = self._blend_function(v)
+
+        dP_du = np.zeros(3)
+        dP_dv = np.zeros(3)
+
+        # Compute the partial derivatives of the surface point with respect to u and v
+        n_u = len(self.control_points) - 1  # u direction control points count
+        n_v = len(self.control_points[0]) - 1  # v direction control points count
+
+        for i in range(n_u):
+            for j in range(n_v):
+                if i < n_u:  # Ensure within bounds for u direction
+                    dP_du += (blend_u[i + 1] - blend_u[i]) * blend_v[j] * self.control_points[i][j]
+                if j < n_v:  # Ensure within bounds for v direction
+                    dP_dv += blend_u[i] * (blend_v[j + 1] - blend_v[j]) * self.control_points[i][j]
+
+        # Compute the normal vector by taking the cross product of the partial derivatives
+        normal = np.cross(dP_du, dP_dv)
+
+        return normal / np.linalg.norm(normal)
+    
+    def evaluate_derivative_u(self, u, v, epsilon=1e-6):
+        # Evaluate surface points at u and u + epsilon
+        P_u = self.evaluate(u, v)
+        P_u_epsilon = self.evaluate(u + epsilon, v)
+
+        # Approximate derivative with finite differences
+        dP_du = (P_u_epsilon - P_u) / epsilon
+
+        return dP_du
+
+    def evaluate_derivative_v(self, u, v, epsilon=1e-6):
+        # Evaluate surface points at v and v + epsilon
+        P_v = self.evaluate(u, v)
+        P_v_epsilon = self.evaluate(u, v + epsilon)
+
+        # Approximate derivative with finite differences
+        dP_dv = (P_v_epsilon - P_v) / epsilon
+
+        return dP_dv
+
+
+    def compute_uv_for_intersection(self, intersection_point, learning_rate=0.01, max_iterations=100, epsilon=1e-6):
+        # Initial guess for parameters (u, v)
+        u, v = 0.5, 0.5
+
+        for _ in range(max_iterations):
+            # Evaluate surface point at current (u, v)
+            P = self.evaluate(u, v)
+
+            # Compute the gradient of the Euclidean distance squared between P and intersection_point
+            dP_du = self.evaluate_derivative_u(u, v)
+            dP_dv = self.evaluate_derivative_v(u, v)
+
+            grad_distance_u = np.dot(dP_du, P - intersection_point)
+            grad_distance_v = np.dot(dP_dv, P - intersection_point)
+
+            # Update (u, v) using gradient descent
+            u -= learning_rate * grad_distance_u
+            v -= learning_rate * grad_distance_v
+
+            # Check for convergence
+            if np.sqrt(grad_distance_u**2 + grad_distance_v**2) < epsilon:
+                break
+
+        u = np.clip(u, 0, 1)
+        v = np.clip(v, 0, 1)
+
+        return u, v

@@ -1,13 +1,13 @@
 import numpy as np
 from camera import Camera
 from color import Color
-from objects import Sphere, Plane, Triangles, Material
+from objects import Sphere, Plane, Triangles, Material, BezierSurface
 from light import Light
 from scene import Scene
 from PIL import Image
 
 INF = float(2e9 + 7)
-MAX_DEPTH = 3
+MAX_DEPTH = 0
 
 
 def main():
@@ -102,16 +102,23 @@ def main():
             ),
         ),
     ]
-    """
 
+    control_points = np.array([
+        [[2, 0, 0], [2.5, 0, 0], [3.5, 0, 0], [4, 0, 0]],
+        [[2, 1, 0], [2.5, 1, 0.5], [3.5, 1, 0.5], [4, 1, 0]],
+        [[2, 2, 0], [2.5, 2, 0.5], [3.5, 2, 0.5], [4, 2, 0]],
+        [[2, 3, 0], [2.5, 3, 0], [3.5, 3, 0], [4, 3, 0]]
+    ])
+    
+    objects = [BezierSurface(control_points, color=Color(100, 50, 133), material=Material(ka=np.array([1,1,1])))]
+    #objects.append(bezier_surface)
 
-    """
-    ambient_light = (150, 150, 150)
+    ambient_light = (255, 255, 255)
 
     lights = [
         # Light(np.array([0, 4, -2]), np.array([255, 223, 142])),
         # Light(np.array([0, 2, 1]), np.array([255, 255, 255])),
-        Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
+        #Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
     ]
 
     scene = Scene(camera, objects, hres, vres, ambient_light, lights)
@@ -207,7 +214,7 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
         kr = np.array(obj_hit.material.kr)  # Reflection coefficient
         kt = np.array(obj_hit.material.kt)  # Transmission coefficient
         n = np.array(obj_hit.material.eta)  # Roughness coefficient
-        ior = np.array(obj_hit.material.ior)  # Index of Reflexion
+        ior = np.array(obj_hit.material.ior)  # Index of Refraction
 
         Ia = np.array(scene.ambient_light)
 
@@ -219,6 +226,9 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
             normal = obj_hit.normal
         elif isinstance(obj_hit, Triangles):
             normal = obj_hit.normal_at(intersection_point)
+        elif isinstance(obj_hit, BezierSurface):
+            u, v = obj_hit.compute_uv_for_intersection(intersection_point)
+            normal = obj_hit.calculate_bezier_normal(u, v)
 
         normal = normalize(normal)
         # View vector (direction towards the camera)
