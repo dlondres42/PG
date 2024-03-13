@@ -5,6 +5,7 @@ from objects import Sphere, Plane, Triangles, Material, BezierSurface
 from light import Light
 from scene import Scene
 from PIL import Image
+from tqdm import tqdm
 
 INF = float(2e9 + 7)
 MAX_DEPTH = 0
@@ -13,10 +14,10 @@ MAX_DEPTH = 0
 def main():
     # inputs do usuario
     O = np.array([0, 0, 0])  # origem
-    A = np.array([2, 0, 0])  # alvo
+    A = np.array([1, 0, 0])  # alvo
     up = np.array([0, 1, 0])  # vetor up
     dist = 1  # distancia do alvo
-    hres = vres = 500  # resolucao horizontal e vertical
+    hres = vres = 900  # resolucao horizontal e vertical
 
     # calculo dos vetores
     w = normalize(A - O)
@@ -104,28 +105,43 @@ def main():
     ]
 
     control_points = np.array([
-        [[2, 0, 0], [2.5, 0, 0], [3.5, 0, 0], [4, 0, 0]],
-        [[2, 1, 0], [2.5, 1, 0.5], [3.5, 1, 0.5], [4, 1, 0]],
-        [[2, 2, 0], [2.5, 2, 0.5], [3.5, 2, 0.5], [4, 2, 0]],
-        [[2, 3, 0], [2.5, 3, 0], [3.5, 3, 0], [4, 3, 0]]
+        [(7,0,-3.1),(7,1,-3),(7,2,-3),(7,3,-3)],
+        [(7,0,-2),(8,1,-2),(8,2,-2), (7, 3, -2)], 
+        [(7,0,-1),(8,1,-1),(8,2,-1), (7, 3, -1)], 
+        [(7,0,0),(7,1,0),(7,2,0), (7,3,0)]
     ])
-    
-    objects = [BezierSurface(control_points, color=Color(100, 50, 133), material=Material(ka=np.array([1,1,1])))]
-    #objects.append(bezier_surface)
+    ctrl_pts = np.array([
+        [[0, 0, 20],  [60, 0, -35],   [90, 0, 60],    [200, 0, 5]],
+        [[0, 50, 30], [100, 60, -25], [120, 50, 120], [200, 50, 5]],
+        [[0, 100, 0], [60, 120, 35],  [90, 100, 60],  [200, 100, 45]],
+        [[0, 150, 0], [60, 150, -35], [90, 180, 60],  [200, 150, 45]]
+    ], dtype=float)
+    ctrl_pts /= 10
+    shift_amount_x = -1
+    shift_amount_y = -5
+    shift_amount_z = 7
 
-    ambient_light = (255, 255, 255)
+# Adjusted control points
+    adjusted_ctrl_pts = ctrl_pts.copy()
+    adjusted_ctrl_pts[:, :, 2] += shift_amount_x
+    adjusted_ctrl_pts[:, :, 1] += shift_amount_y
+    adjusted_ctrl_pts[:, :, 0] += shift_amount_z
+    objects = [BezierSurface(adjusted_ctrl_pts, color=Color(100, 50, 133))]
+    #objects.append(bezier_surface)
+    
+    ambient_light = (125, 125, 125)
 
     lights = [
-        # Light(np.array([0, 4, -2]), np.array([255, 223, 142])),
-        # Light(np.array([0, 2, 1]), np.array([255, 255, 255])),
-        #Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
+        Light(np.array([0, 4, -1]), np.array([255, 255, 255])),
+        Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
+        #Light(np.array([-4, 3, 0]), np.array([255, 255, 255]))
     ]
 
     scene = Scene(camera, objects, hres, vres, ambient_light, lights)
 
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    image.save("output.png")  # save img
+    image.save("output_bezier_3.png")  # save img
     # image.show()  # show img
 
 
@@ -134,7 +150,7 @@ def render(scene: Scene) -> np.array:
     camera = scene.camera
     C, w, u, v, dist = camera.get_params()
     # base ortornormal w, u, v
-
+    
     # malha
     tam_x, tam_y = 0.5, 0.5
     desl_h = ((2 * tam_x) / (hres - 1)) * u
@@ -143,6 +159,8 @@ def render(scene: Scene) -> np.array:
 
     mtx = np.zeros((scene.height, scene.width, 3), dtype=np.uint8)
 
+    progress_bar = tqdm(total=vres, desc="Rendering")
+
     for j in range(vres):  # iterando sobre as linhas
         for i in range(hres):  # iterando sobre as colunas
             v_r = (
@@ -150,6 +168,10 @@ def render(scene: Scene) -> np.array:
             )  # ponto do centro de cada pixel
             _, color = ray_color(C, v_r, scene)
             mtx[j][i] = color.to_list()
+
+        progress_bar.update(1)
+
+    progress_bar.close()
 
     return mtx
 
@@ -227,8 +249,7 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
         elif isinstance(obj_hit, Triangles):
             normal = obj_hit.normal_at(intersection_point)
         elif isinstance(obj_hit, BezierSurface):
-            u, v = obj_hit.compute_uv_for_intersection(intersection_point)
-            normal = obj_hit.calculate_bezier_normal(u, v)
+            normal = obj_hit.normal_at(intersection_point)
 
         normal = normalize(normal)
         # View vector (direction towards the camera)
