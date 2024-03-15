@@ -1,5 +1,7 @@
 import numpy as np
+import math
 from math import sqrt
+
 
 INF = float(2e9 + 7)
 
@@ -220,7 +222,7 @@ class BezierSurface(Object):
         result = np.zeros(3)
 
         for i in range(n + 1):
-            for j in range(m + 1):
+            for j in range(m + 1):  
                 coeff = self.bernstein(n, i, u) * self.bernstein(m, j, v)
                 result += coeff * self.control_points[i][j]  
 
@@ -273,6 +275,149 @@ class BezierSurface(Object):
         return mesh
 
     # Both intersect and normal finding functions are equivalent to the meshes'
+    def intersect(self, camera_center, d_vector) -> float:
+        return self.triangles.intersect(camera_center, d_vector)
+    
+    def normal_at(self, intersection_point):
+        return self.triangles.normal_at(intersection_point)
+    
+
+class BezierCurve:
+    def __init__(self, control_points):
+            self.control_points = np.array(control_points)
+
+    def evaluate(self, t):
+        n = len(self.control_points) - 1
+        result = np.zeros_like(self.control_points[0])
+        for i in range(n + 1):
+            result = result.astype(float)
+            result += self.bernstein(n, i, t) * self.control_points[i]
+        return result
+
+    def bernstein(self, n, i, t):
+            return np.math.comb(n, i) * (t ** i) * ((1 - t) ** (n - i))
+        
+    
+class SurfaceOfRevolution(Object):
+    def __init__(self, num_samples:int, origin: np.array, axis_of_rotation: np.array, control_points: np.array, color: tuple, material: Material = Material()):
+        super().__init__(color, material)
+        self.origin = np.array(origin) # Mostly [0,0,0]
+        self.axis_of_rotation = axis_of_rotation # Rotation mostly on X-axis, [1,0,0]
+        self.num_samples = num_samples
+        self.control_points = control_points
+        self.bezier_curve = BezierCurve(control_points)
+        self.triangles = self.triangulate()
+    """
+    def rotate(self, point: np.array, angle: float) -> np.array:
+        angle = math.radians(angle)
+        
+        normalized_axis = self.axis_of_rotation / np.linalg.norm(self.axis_of_rotation)
+        
+        ux, uy, uz = normalized_axis[0], normalized_axis[1], normalized_axis[2]
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+        t = 1 - cos_a
+        R = np.array([
+                [cos_a + ux**2*t, ux*uy*t - uz*sin_a, ux*uz*t + uy*sin_a],
+                [uy*ux*t + uz*sin_a, cos_a + uy**2*t, uy*uz*t - ux*sin_a],
+                [uz*ux*t - uy*sin_a, uz*uy*t + ux*sin_a, cos_a + uz**2*t]
+        ])
+
+        to_origin_matrix = [
+            [1, 0, 0, -self.origin[0]],
+            [0, 1, 0, -self.origin[1]],
+            [0, 0, 1, -self.origin[2]], 
+            [0, 0, 0, 1]]
+
+        back_from_origin_matrix = [
+            [1, 0, 0, self.origin[0]],
+            [0, 1, 0, self.origin[1]],
+            [0, 0, 1, self.origin[2]], 
+            [0, 0, 0, 1]]
+        
+        final_matrix = np.dot(back_from_origin_matrix, np.dot(to_origin_matrix, np.pad(R, ((0, 1), (0, 1)), mode='constant')))
+        rotated_point = np.dot(final_matrix, np.array([point[0], point[1], point[2], 1]))
+
+        return rotated_point[:3]
+    """
+    
+    def rotate(self, point: np.array, angle: float) -> np.array:
+        angle = math.radians(angle)  # Ensure angle is in radians
+        
+        normalized_axis = self.axis_of_rotation / np.linalg.norm(self.axis_of_rotation)
+        ux, uy, uz = normalized_axis
+        
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+        t = 1 - cos_a
+        
+        # Rotation matrix for rotation around a general axis
+        R = np.array([
+            [cos_a + ux**2 * t, ux*uy*t - uz*sin_a, ux*uz*t + uy*sin_a],
+            [uy*ux*t + uz*sin_a, cos_a + uy**2*t, uy*uz*t - ux*sin_a],
+            [uz*ux*t - uy*sin_a, uz*uy*t + ux*sin_a, cos_a + uz**2*t]
+        ])
+        
+        # Affine transformation matrices correctly applied
+        point_homogeneous = np.append(point, 1)  # Convert to homogeneous coordinates
+        translation_matrix = np.eye(4)  # Identity matrix for translation
+        translation_matrix[:3, 3] = -self.origin  # Translation to origin
+        
+        back_translation_matrix = np.eye(4)
+        back_translation_matrix[:3, 3] = self.origin  # Translation back from origin
+        
+        R_homogeneous = np.eye(4)
+        R_homogeneous[:3, :3] = R  # Embedding the rotation matrix in a 4x4 matrix
+        
+        # Applying the transformations
+        transformed_point = back_translation_matrix @ R_homogeneous @ translation_matrix @ point_homogeneous
+        
+        return transformed_point[:3] 
+    
+    def evaluate_point(self, u, v):
+        """Evaluate a point on the surface at (u, v)"""
+        point_on_curve = self.bezier_curve.evaluate(u)
+        
+        theta = 2 * math.pi * v
+        rotated_point = self.rotate(point_on_curve, theta)
+        
+        return rotated_point
+
+    def triangulate(self):
+        """Generate a triangle mesh for the surface"""
+        vertices = np.empty((0, 3), dtype=float)
+
+        num_samples = self.num_samples
+
+        # Generate the vertices
+        for i in range(num_samples):
+            u = i / (num_samples - 1)
+            for j in range(num_samples):
+                v = j / (num_samples - 1)
+                point = self.evaluate_point(u, v)
+                vertices = np.concatenate((vertices, np.array([point])), axis=0)
+
+        # Generate the indices for the triangle mesh
+        triangle_indices = []
+        for i in range(num_samples - 1):
+            for j in range(num_samples - 1):
+
+                p1_idx = i * num_samples + j
+                p2_idx = i * num_samples + (j + 1)
+                p3_idx = (i + 1) * num_samples + j
+                p4_idx = (i + 1) * num_samples + (j + 1)
+
+                triangle_indices.extend([[p1_idx, p2_idx, p3_idx], [p2_idx, p4_idx, p3_idx]])
+
+        # Mesh creation
+        flat_surface_points = vertices.reshape((-1, 3))
+        mesh = Triangles(num_triangles=len(triangle_indices),
+                         num_vertices=len(flat_surface_points),
+                         vertices=flat_surface_points,
+                         triangle_index=triangle_indices,
+                         color=self.color)
+        return mesh
+    
     def intersect(self, camera_center, d_vector) -> float:
         return self.triangles.intersect(camera_center, d_vector)
     

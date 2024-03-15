@@ -1,7 +1,7 @@
 import numpy as np
 from camera import Camera
 from color import Color
-from objects import Sphere, Plane, Triangles, Material, BezierSurface
+from objects import Sphere, Plane, Triangles, Material, BezierSurface, SurfaceOfRevolution
 from light import Light
 from scene import Scene
 from PIL import Image
@@ -126,9 +126,36 @@ def main():
     adjusted_ctrl_pts[:, :, 2] += shift_amount_x
     adjusted_ctrl_pts[:, :, 1] += shift_amount_y
     adjusted_ctrl_pts[:, :, 0] += shift_amount_z
-    objects = [BezierSurface(adjusted_ctrl_pts, color=Color(100, 50, 133))]
+    control_points_revolution2 = np.array([
+        [0, 0, 0],    # Control point 1
+        [1, 1, 1],    # Control point 2
+        [2, 0, 1],    # Control point 3
+        [3, -1, 0],   # Control point 4
+    ])
+    control_points_revolution = [
+                    [
+                        0,
+                        0,
+                        0
+                    ], [
+                        3,
+                        7,
+                        0
+                    ], [
+                        11,
+                        -1,
+                        0
+                    ], [
+                        13,
+                        3,
+                        0
+                    ]
+                ]
+    #objects = [BezierSurface(adjusted_ctrl_pts, color=Color(100, 50, 133))]
+    objects = [SurfaceOfRevolution(num_samples=5, origin=[0,0,0], axis_of_rotation=[1,0,0], control_points=control_points_revolution, color=Color(100, 50, 133))]
     #objects.append(bezier_surface)
     
+
     ambient_light = (125, 125, 125)
 
     lights = [
@@ -141,7 +168,7 @@ def main():
 
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    image.save("output_bezier_3.png")  # save img
+    image.save("surface_of_revolution.png")  # save img
     # image.show()  # show img
 
 
@@ -249,6 +276,8 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
         elif isinstance(obj_hit, Triangles):
             normal = obj_hit.normal_at(intersection_point)
         elif isinstance(obj_hit, BezierSurface):
+            normal = obj_hit.normal_at(intersection_point)
+        elif isinstance(obj_hit, SurfaceOfRevolution):
             normal = obj_hit.normal_at(intersection_point)
 
         normal = normalize(normal)
