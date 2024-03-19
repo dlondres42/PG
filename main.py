@@ -8,7 +8,7 @@ from PIL import Image
 from tqdm import tqdm
 
 INF = float(2e9 + 7)
-MAX_DEPTH = 0
+MAX_DEPTH = 3
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     A = np.array([1, 0, 0])  # alvo
     up = np.array([0, 1, 0])  # vetor up
     dist = 1  # distancia do alvo
-    hres = vres = 900  # resolucao horizontal e vertical
+    hres = vres = 500  # resolucao horizontal e vertical
 
     # calculo dos vetores
     w = normalize(A - O)
@@ -126,22 +126,22 @@ def main():
     adjusted_ctrl_pts[:, :, 2] += shift_amount_x
     adjusted_ctrl_pts[:, :, 1] += shift_amount_y
     adjusted_ctrl_pts[:, :, 0] += shift_amount_z
-    objects = [BezierSurface(adjusted_ctrl_pts, color=Color(100, 50, 133))]
+    # objects = [BezierSurface(adjusted_ctrl_pts, color=Color(100, 50, 133))]
     #objects.append(bezier_surface)
     
-    ambient_light = (125, 125, 125)
+    ambient_light = (60, 60, 60)
 
     lights = [
-        Light(np.array([0, 4, -1]), np.array([255, 255, 255])),
-        Light(np.array([0, 0, 0]), np.array([255, 255, 255]))
-        #Light(np.array([-4, 3, 0]), np.array([255, 255, 255]))
+        # Light(np.array([0, 4, -1]), np.array([255, 255, 255]), 0.2),
+        # Light(np.array([0, 0, 0]), np.array([255, 255, 255]), 2),
+        Light(np.array([-4, 3, 0]), np.array([255, 255, 255]), 1.5)
     ]
 
     scene = Scene(camera, objects, hres, vres, ambient_light, lights)
 
     mtx = render(scene)
     image = Image.fromarray(mtx)
-    image.save("output_bezier_3.png")  # save img
+    image.save("output_2.png")  # save img
     # image.show()  # show img
 
 
@@ -166,7 +166,7 @@ def render(scene: Scene) -> np.array:
             v_r = (
                 vet_inicial + (i * desl_h) + (j * desl_v)
             )  # ponto do centro de cada pixel
-            _, color = ray_color(C, v_r, scene)
+            _, color = ray_color(C, v_r, scene, 0, 256)
             mtx[j][i] = color.to_list()
 
         progress_bar.update(1)
@@ -222,7 +222,7 @@ def reflect_ray(L, normal):
     return R
 
 
-def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
+def ray_color(ray_origin, ray_direction, scene: Scene, depth=0, num_samples_shadow_points=16):
     if depth > MAX_DEPTH:
         return None, Color(0, 0, 0)
 
@@ -256,8 +256,7 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
         V = normalize(scene.camera.origin - intersection_point)
 
         # Initialize the total color contribution
-        total_color = np.array([0, 0, 0])
-        total_color = total_color.astype(np.float64)
+        total_color = np.array([0, 0, 0], dtype=np.float64)
 
         # Ambient component
         ambient_color = ka * Ia
@@ -265,12 +264,14 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
 
         for light in scene.lights:
             # Direction from the intersection point to the light
+
             L = normalize(light.position - intersection_point)
+            shadow_intensity = soft_shadow(intersection_point + normal * 0.001, L, scene, light, num_samples_shadow_points)
 
             # Diffuse component
             diffuse_dot = max(np.dot(normal, L), 0)
             # diffuse_dot = np.dot(normal, L)
-            diffuse_color = kd * light.intensity * diffuse_dot
+            diffuse_color = kd * light.intensity * diffuse_dot * shadow_intensity
             total_color += diffuse_color
             # if diffuse_dot > 0:
             #    total_color += diffuse_color % 256
@@ -279,7 +280,7 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
             R = normalize(reflect_ray(L, normal))
             specular_dot = max(np.dot(R, V), 0)
             # specular_dot = np.dot(R, V)
-            specular_color = ks * light.intensity * (specular_dot**n)
+            specular_color = ks * light.intensity * (specular_dot**n) * shadow_intensity
             total_color += specular_color
             # if specular_color > 0:
             #    total_color += specular_color
@@ -289,7 +290,7 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
             reflected_ray_color = np.array(
                 [reflected_ray_color.r, reflected_ray_color.g, reflected_ray_color.b]
             )
-            total_color += kr * reflected_ray_color
+            # total_color += kr * reflected_ray_color
 
             # Refraction
             refracted_ray_direction = refract_ray(ray_direction, normal, ior)
@@ -316,6 +317,23 @@ def ray_color(ray_origin, ray_direction, scene: Scene, depth=0):
         color = Color(r, g, b)
         # color = obj_hit.color
     return t_min, color
+
+def soft_shadow(ray_origin, direction, scene, light, num_samples):
+    shadow_intensity = 0
+    for _ in range(num_samples):
+        offset = np.random.uniform(-light.radius, light.radius, size=3)
+        sample_point = light.position + offset
+        to_light = normalize(sample_point - ray_origin)
+        if not is_obstructed(ray_origin, to_light, scene, light):
+            shadow_intensity += 1
+    return shadow_intensity / num_samples
+
+def is_obstructed(ray_origin, direction, scene, light):
+    for obj in scene.objects:
+        t = obj.intersect(ray_origin, direction)
+        if 0 < t < np.linalg.norm(light.position - ray_origin):
+            return True
+    return False
 
 
 def normalize(vect: np.array):
